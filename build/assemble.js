@@ -1,52 +1,9 @@
-// build/assemble.js
-// Assembles the final self-contained SD_OS_Suite.html
-
-const fs = require('fs');
-const path = require('path');
-
-console.log("Beginning build assembly for SD OS Suite...");
-
-const templatePath = path.join(__dirname, 'template.html');
-const stylesPath = path.join(__dirname, 'styles.css');
-const xlsxPath = path.join(__dirname, '..', 'xlsx.full.min.js');
-
-const jsFiles = [
-  'seed_generator.js',
-  'core.js',
-  'xlsx_helpers.js',
-  'module_home.js',
-  'module_audit.js',
-  'module_vault.js',
-  'module_analysis.js',
-  'module_shifts.js',
-  'module_tasks.js',
-  'module_ranking.js',
-  'module_mapping.js',
-  'module_settings.js',
-  'app_init.js'
-];
-
-let template = fs.readFileSync(templatePath, 'utf8');
-const styles = fs.readFileSync(stylesPath, 'utf8');
-const xlsxCode = fs.readFileSync(xlsxPath, 'utf8');
-
-let combinedScripts = "";
-jsFiles.forEach(file => {
-  const filePath = path.join(__dirname, file);
-  console.log(`Inlining ${file}...`);
-  const content = fs.readFileSync(filePath, 'utf8');
-  combinedScripts += `\n// --- ${file} ---\n` + content + `\n`;
-});
-
-// Use function replacement or split/join to avoid $1, $& interpolation corruption
-template = template.split('/* __STYLES_PLACEHOLDER__ */').join(styles);
-template = template.split('/* __XLSX_PLACEHOLDER__ */').join(xlsxCode);
-template = template.split('/* __SCRIPTS_PLACEHOLDER__ */').join(combinedScripts);
-
-const outputPath = path.join(__dirname, '..', 'SD_OS_Suite.html');
-fs.writeFileSync(outputPath, template, 'utf8');
-
-const stats = fs.statSync(outputPath);
-console.log(`Build SUCCESS: SD_OS_Suite.html generated!`);
-console.log(`Output Path: ${outputPath}`);
-console.log(`File Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB (${stats.size.toLocaleString()} bytes)`);
+// Assemble the new workspace as a self-contained HTML file.
+const fs=require('fs'),path=require('path');
+const root=path.join(__dirname,'..'), src=path.join(root,'src');
+let html=fs.readFileSync(path.join(src,'template.html'),'utf8');
+const rubric='const SD_DEFAULT_RUBRIC = '+fs.readFileSync(path.join(src,'default-rubric.json'),'utf8')+';\n';
+const scripts=rubric+['domain.js','storage.js','imports.js','roster.js','capacity.js','performance.js','audit.js','reconciliation.js','insights.js','assistant.js','provider.js','ui.js'].map(f=>fs.readFileSync(path.join(src,f),'utf8')).join('\n');
+html=html.replace('/* __STYLES_PLACEHOLDER__ */',()=>fs.readFileSync(path.join(src,'styles.css'),'utf8')).replace('/* __XLSX_PLACEHOLDER__ */',()=>fs.readFileSync(path.join(root,'xlsx.full.min.js'),'utf8')).replace('/* __SCRIPTS_PLACEHOLDER__ */',()=>scripts);
+fs.writeFileSync(path.join(root,'SD_OS_Suite.html'),html.trimEnd()+'\n');
+console.log('Built SD_OS_Suite.html');
