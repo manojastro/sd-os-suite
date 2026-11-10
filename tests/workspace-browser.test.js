@@ -8,7 +8,7 @@ const {pathToFileURL}=require('node:url');const path=require('node:path');const 
  p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>{if(/^https?:/.test(r.url())&&(!localOrigin||new URL(r.url()).origin!==localOrigin))requests.push(r.url());});
  await p.goto(process.env.TEST_URL||pathToFileURL(path.join(__dirname,'../SD_OS_Suite.html')).href);
  await p.getByRole('heading',{name:'Overview'}).waitFor();
- assert.equal(await p.locator('.value').first().textContent(),'0');
+ assert.equal(await p.locator('.kpi-value').first().textContent(),'0');
  await p.getByRole('button',{name:'Import data'}).click();
  await p.locator('#import-kind').selectOption('employees');
  await p.locator('#import-file').setInputFiles({name:'team.csv',mimeType:'text/csv',buffer:Buffer.from('id,name,team\ne1,Ada,Support\ne2,Bob,Support\n')});
