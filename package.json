@@ -3,10 +3,11 @@
   "private": true,
   "scripts": {
     "build": "node build/assemble.js",
-    "test": "node --test tests/domain.test.js",
+    "test": "node --test tests/domain.test.js tests/enhancements.test.js",
     "test:browser-storage": "node tests/storage-browser.test.js",
     "test:browser": "node tests/workspace-browser.test.js",
-    "test:browser-fallback": "node tests/fallback-browser.test.js"
+    "test:browser-fallback": "node tests/fallback-browser.test.js",
+    "test:browser-enhancements": "node tests/enhancements-browser.test.js"
   },
   "devDependencies": {
     "playwright-core": "1.49.1"

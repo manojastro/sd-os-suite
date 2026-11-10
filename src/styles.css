@@ -3,3 +3,5 @@
 .sidebar-head{display:flex;align-items:start;justify-content:space-between}.sidebar-head button{display:none}@media(max-width:768px){.sidebar-head button{display:block}header{gap:8px}header>span{display:none}}
 
 #form-error:empty{display:none}
+
+#assistant.expanded{width:min(960px,100vw)}#assistant-starters{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}#assistant-starters[hidden]{display:none}#assistant-starters button{font-size:14px;padding:6px 10px}

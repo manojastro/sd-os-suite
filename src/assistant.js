@@ -20,7 +20,8 @@
     get_record: {write:false,schema:{type:'object',properties:{collection:{type:'string',enum:['employees','tickets','tasks','audits','roster','demand','performance','baselines']},id:{type:'string',maxLength:100}},required:['collection','id'],additionalProperties:false}},
     get_source_rows: {write:false,schema:{type:'object',properties:{importId:{type:'string',maxLength:100},offset:{type:'integer',minimum:0,maximum:100000}},required:['importId','offset'],additionalProperties:false}},
     get_data_provenance: {write:false,schema:{type:'object',properties:{},required:[],additionalProperties:false}},
-    update_task: {write:true,schema:{type:'object',properties:{id:{type:'string',maxLength:100},status:{type:'string',enum:['Open','In progress','Blocked','Done']},priority:{type:'string',enum:['Low','Normal','High','Urgent']},dueDate:{type:'string',maxLength:10},ownerId:{type:'string',maxLength:100}},required:['id'],additionalProperties:false}},
+    list_tasks: {write:false,schema:{type:'object',properties:{},required:[],additionalProperties:false}},
+    update_task: {write:true,schema:{type:'object',properties:{id:{type:'string',maxLength:100},status:{type:'string',enum:['Open','In progress','Blocked','Done']},priority:{type:'string',enum:['Low','Normal','High','Urgent']},dueDate:{type:'string',maxLength:10},ownerId:{type:'string',maxLength:100},archived:{type:'boolean'}},required:['id'],additionalProperties:false}},
     create_task: {write:true,schema:{type:'object',properties:{title:{type:'string',maxLength:300},ownerId:{type:'string'},dueDate:{type:'string'},priority:{type:'string',enum:['Low','Normal','High','Urgent']},idempotencyKey:{type:'string',maxLength:100}},required:['title','idempotencyKey'],additionalProperties:false}}
   };
   function validate(name, args) {
@@ -54,7 +55,8 @@
       }
       if (name==='get_source_rows') {const imp=state.imports.find(x=>x.id===args.importId);if(!imp)throw Error('Import not found.');const rows=(imp.sourceRows||[]).slice(args.offset,args.offset+20).map(r=>({sourceRow:r.sourceRow,data:Object.fromEntries(Object.entries(r.data||{}).map(([k,v])=>[k,/password|token|secret|email|phone/i.test(k)?'[masked]':String(v).slice(0,500)]))}));return {ok:true,rows,total:(imp.sourceRows||[]).length,offset:args.offset,scope:'Up to 20 rows; sensitive columns masked',affectedIds:[]};}
       if (name==='get_data_provenance') return {ok:true,imports:state.imports.slice(-20).map(({id,kind,filename,sheet,importedAt,revision,mode,rowIds})=>({id,kind,filename,sheet,importedAt,revision,mode,rowCount:rowIds?.length||0})),scope:'Most recent 20 imports; source rows available on request',affectedIds:[]};
-      if (name==='update_task') {const task=state.tasks.find(t=>t.id===args.id);if(!task)throw Error('Task not found; supply its exact ID.');const patch=Object.fromEntries(Object.entries(args).filter(([k])=>k!=='id'));if(!Object.keys(patch).length)throw Error('Provide at least one task change.');const before=Object.fromEntries(Object.keys(patch).map(k=>[k,task[k]||'']));D.updateTask(state,args.id,patch);return {ok:true,task,before,affectedIds:[task.id]};}
+      if (name==='list_tasks') {const open=state.tasks.filter(t=>!t.archived&&t.status!=='Done');return {ok:true,tasks:open.slice(0,20).map(({id,title,status,priority,dueDate,ownerId})=>({id,title,status,priority,dueDate:dueDate||'',ownerId:ownerId||''})),total:open.length,scope:'Open tasks (not Done, not archived); first 20 shown',affectedIds:[]};}
+      if (name==='update_task') {const task=state.tasks.find(t=>t.id===args.id);if(!task)throw Error('Task not found; supply its exact ID.');const patch=Object.fromEntries(Object.entries(args).filter(([k])=>k!=='id'));if(!Object.keys(patch).length)throw Error('Provide at least one task change.');const before=Object.fromEntries(Object.keys(patch).map(k=>[k,task[k]===undefined?null:task[k]]));D.updateTask(state,args.id,patch);return {ok:true,task,before,affectedIds:[task.id]};}
       if (name==='get_metric') return {ok:true,metric:D.ticketMetrics(state.tickets,state.settings.timezone,state.settings.cutoffHour),scope:'All tickets',affectedIds:[]};
       const result=D.createTask(state,args,{idempotencyKey:args.idempotencyKey});
       return {ok:true,task:result.record,duplicate:result.duplicate,affectedIds:[result.record.id]};
@@ -62,7 +64,9 @@
   }
   function localCommand(text) {
     const trimmed=String(text).trim();
-    if (/^help$/i.test(trimmed)) return {help:'Commands: help; tickets; search employees|tickets|tasks|audits|roster|demand|performance|baselines <text>; create task <title>; complete task <ID>; reopen task <ID>; assign task <ID> to <employee ID>; set task <ID> priority <priority>; set task <ID> due <YYYY-MM-DD>; open <page>; import data; export backup; validate roster; audit <transcript>; undo.'};
+    if (/^help$/i.test(trimmed)) return {help:'Commands: help; tickets; list tasks; search employees|tickets|tasks|audits|roster|demand|performance|baselines <text>; create task <title>; complete task <ID>; reopen task <ID>; archive task <ID>; assign task <ID> to <employee ID>; set task <ID> priority <priority>; set task <ID> due <YYYY-MM-DD>; open <page>; import data; export backup; validate roster; audit <transcript>; undo.'};
+    if (/^list tasks$/i.test(trimmed)) return {name:'list_tasks',args:{}};
+    const archive=/^archive task\s+(\S+)$/i.exec(trimmed);if(archive)return {name:'update_task',args:{id:archive[1],archived:true}};
     const nav=/^open (overview|audits|operations|shifts|tasks|performance|directory|settings)$/i.exec(trimmed);if(nav)return {name:'navigate',args:{page:nav[1].toLowerCase()}};
     if(/^validate roster$/i.test(trimmed))return {name:'validate_roster',args:{}};
     const audit=/^audit\s+([\s\S]+)$/i.exec(trimmed);if(audit)return {name:'run_audit',args:{transcript:audit[1]}};

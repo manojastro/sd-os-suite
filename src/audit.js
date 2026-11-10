@@ -6,7 +6,10 @@
   // Flags identify text for a reviewer; they are not determinations of a security violation.
   const rules = [
     {id:'password_request',label:'Possible password request',pattern:/\b(?:send|share|tell|provide)\s+(?:me\s+)?(?:your|the)\s+password\b/ig},
-    {id:'verification_skipped',label:'Possible skipped verification',pattern:/\b(?:skip(?:ped)?|bypass(?:ed)?)\s+(?:the\s+)?(?:identity\s+)?verification\b/ig}
+    {id:'verification_skipped',label:'Possible skipped verification',pattern:/\b(?:skip(?:ped)?|bypass(?:ed)?)\s+(?:the\s+)?(?:identity\s+)?verification\b/ig},
+    {id:'one_time_code_request',label:'Possible one-time code request',pattern:/\b(?:send|share|read|tell|provide|give)\s+(?:me\s+)?(?:the\s+|your\s+)?(?:one[- ]time|otp|verification|security|6[- ]digit)\s+(?:code|passcode|pin)\b/ig},
+    {id:'card_detail_request',label:'Possible card detail request',pattern:/\b(?:send|share|read|tell|provide|give)\s+(?:me\s+)?(?:your|the)\s+(?:full\s+)?(?:card\s+number|cvv|cvc|card\s+security\s+code)\b/ig},
+    {id:'government_id_request',label:'Possible government ID request',pattern:/\b(?:send|share|read|tell|provide|give)\s+(?:me\s+)?(?:your|the)\s+(?:social\s+security|ssn|aadhaar|passport|national\s+id)(?:\s+number)?\b/ig}
   ];
   function run(transcript) {
     if (typeof transcript !== 'string' || !transcript.trim()) throw new Error('A transcript is required.');
