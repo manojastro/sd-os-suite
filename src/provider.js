@@ -8,14 +8,14 @@ async function run({endpoint,model,key,consent,messages,tools,execute,signal,fet
  if(url.protocol!=='https:'&&!(url.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(url.hostname)))throw Error('Provider endpoint must use HTTPS or localhost.');
  if(url.username||url.password||url.search||url.hash)throw Error('Provider endpoint must not contain credentials, query or fragment.');
  url.pathname=url.pathname.replace(/\/$/,'')+'/chat/completions';
- const history=messages.slice(-12).map(m=>({role:m.role,content:String(m.content).slice(0,8000)}));
+ const history=messages.slice(-12).map(m=>({role:m.role,content:String(m.content).slice(0,m.role==='system'?30000:8000)}));
  const schema=Object.entries(tools).map(([name,t])=>({type:'function',function:{name,description:`Application tool: ${name}`,parameters:t.schema}}));
  for(let step=0;step<4;step++){
   if(signal?.aborted)throw Error('Request cancelled.');
   const timeout=new AbortController(),timer=setTimeout(()=>timeout.abort(),30000), onAbort=()=>timeout.abort();
   if(signal)signal.addEventListener('abort',onAbort,{once:true});
   let response,text;
-  try{response=await fetcher(url.href,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,messages:history,tools:schema,tool_choice:'auto',max_tokens:800,stream:false}),signal:timeout.signal});
+  try{response=await fetcher(url.href,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({model,messages:history,...(schema.length?{tools:schema,tool_choice:'auto'}:{}),max_tokens:1500,stream:false}),signal:timeout.signal});
    if(!response.ok)throw Error(`Provider returned HTTP ${response.status}.`);
    text=await response.text();
   }catch(e){if(timeout.signal.aborted)throw Error(signal?.aborted?'Request cancelled.':'Provider request timed out.');if(/^Provider returned HTTP/.test(e.message))throw e;throw Error('Provider request failed. Check network access and CORS.');}

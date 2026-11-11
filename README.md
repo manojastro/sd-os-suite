@@ -8,6 +8,10 @@ Open `SD_OS_Suite.html` in a modern browser. No server, account, or network conn
 
 Data is stored in IndexedDB for the browser and origin that created it. A `file:` URL and the local server have separate storage, as do different browsers and hosted origins. If IndexedDB is unavailable, the app warns that changes are session-only. Concurrent writes use revision checks; reload before applying a stale change. The app copies old `SD_OS_v2_` data into an unverified snapshot without deleting it; old tasks can be reviewed individually, and the complete snapshot can be downloaded. Legacy records are excluded from current metrics until reviewed or imported.
 
+## Redesign v3 (simulated insight layer)
+
+Overview, Audits, Shifts, Tasks, Performance and the new Data Vault (replacing Team Directory in the navigation; it remains under Settings) are driven by a deterministic **simulated** model (`src/sim.js`, charts in `src/charts2.js`, pages in `src/views.js`). Every such page is labelled "Simulated data". Audit results and volume forecasts can be uploaded (Excel/CSV) or replaced with a sample upload; AI shift planning is a greedy optimiser, not a trained model. Data Vault entries, task status changes and uploads persist in browser localStorage only. The assistant adds live CSS / volume / issue-category checks. The older Playwright browser tests (`test:browser*`) target the previous UI and have not been updated; `npm test` (43 tests) passes.
+
 ## Current features
 
 - CSV/XLS/XLSX import with sheet selection, column mapping, validation, preview, append/upsert/replace, error reports, source rows and provenance. Blank templates are downloadable in Settings. Imports and restores are committed in IndexedDB transactions.
